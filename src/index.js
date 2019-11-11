@@ -2,11 +2,46 @@ import { GraphQLServer} from 'graphql-yoga'
 
 // scalar types : ID, String, Int, Float, Boolean
 
+// demo user data
+const users  = [{
+    id: 1,
+    name: "Mike",
+    email: "mike@example.com",
+    age: 23
+},{
+    id: 2,
+    name: "Sarag",
+    email: "Sarag@example.com",
+}, {
+    id: 3,
+    name: "Andy",
+    email: "Andy@example.com",
+}]
+
+const posts = [{
+    id: 1,
+    title: 'Some silly title',
+    body: 'superman body',
+    published: true,
+    author: 1
+}, {
+    id: 2,
+    title: 'Revenge title',
+    body: 'lost at sea',
+    published: false,
+    author: 3
+}, {
+    id: 3,
+    title: 'Martian',
+    body: 'all the space crap',
+    published: true,
+    author: 2
+}]
 // define type definitions (schema)
 const typeDefs = `
     type Query {
-        greeting(name: String, position: String): String!
-        add(numbers: [Float!]!): Float!
+        users(query: String): [User!]!
+        posts(query: String): [Post!]!
         me: User!
         post: Post!
     }
@@ -23,26 +58,29 @@ const typeDefs = `
         title: String!
         body: String!
         published: Boolean!
+        author: User!
     }
 `
 
 // define resolvers (what will be returned from Graphql API)
 const resolvers = {
     Query: {
-        greeting: (parent, args, ctx, info) => {
-            if (args.name && args.position) {
-                return `Hello ${args.name} ! You're my favourite ${args.position}`
+        users: (parent, args, ctx, info) => {
+            if (!args.query) {
+                return users
             }
 
-            return 'Hello'
+            return users.filter((user) => {
+                return user.name.toLowerCase().includes(args.query.toLowerCase())
+            })
         },
-        add: (parent, args, ctx, info) => {
-            if (args.numbers.length === 0) {
-                return 0
+        posts: (parent, args, ctx, info) => {
+            if (!args.query) {
+                return posts
             }
-            // [1, 5, 6, 12]
-            return args.numbers.reduce((accumulator, currentValue) => {
-                return accumulator + currentValue
+
+            return posts.filter((post) => {
+                return post.title.toLowerCase().includes(args.query.toLowerCase()) || post.body.toLowerCase().includes(args.query.toLowerCase())
             })
         },
         me: () => ({
@@ -57,6 +95,14 @@ const resolvers = {
             body: "",
             published: true
         })
+    },
+    Post: {
+        // relational to users (parent arguement inherits from Post type)
+        author: (parent, args, ctx, info) => {
+            return users.find( user => {
+                return user.id === parent.author
+            })
+        }
     }
 }
 
