@@ -4,60 +4,60 @@ import uuidv4 from 'uuid/v4'
 
 // demo user data
 const users  = [{
-    id: 1,
+    id: '1',
     name: "Mike",
     email: "mike@example.com",
     age: 23
 },{
-    id: 2,
+    id: '2',
     name: "Sarah",
     email: "Sarah@example.com",
 }, {
-    id: 3,
+    id: '3',
     name: "Andy",
     email: "Andy@example.com",
 }]
 
 const posts = [{
-    id: 1,
+    id: '1',
     title: 'Some silly title',
     body: 'superman body',
     published: true,
-    author: 1,
+    author: '1',
 }, {
-    id: 2,
+    id: '2',
     title: 'Revenge title',
     body: 'lost at sea',
     published: false,
-    author: 3
+    author: '3'
 }, {
-    id: 3,
+    id: '3',
     title: 'Martian',
     body: 'all the space crap',
     published: true,
-    author: 2
+    author: '2'
 }]
 
 const comments = [{
     id: '1',
     text: 'I love it',
-    author: 1,
-    post: 1
+    author: '1',
+    post: '1'
 }, {
     id: '2',
     text: 'Great tune !',
-    author: 2,
-    post: 2
+    author: '2',
+    post: '2'
 },{
     id: '3',
     text: 'I am proud that I belong to this god\'s, era of love, 1970s',
-    author: 2,
-    post: 2
+    author: '2',
+    post: '2'
 },{
     id: '4',
     text: 'K STARDAZ yea they sure were.',
-    author: 3,
-    post: 3
+    author: '3',
+    post: '3'
 }]
 
 // define type definitions (schema)
@@ -71,6 +71,8 @@ const typeDefs = `
 
     type Mutation {
         createUser(name: String!, email: String!, age: String): User!
+        createPost(title: String!, body: String!, published: Boolean!, author: ID!): Post!
+        createComment(text: String!, author: ID!, post: ID! ): Comment!
     }
 
     type User {
@@ -145,6 +147,41 @@ const resolvers = {
             }
             users.push(user)
             return user
+        },
+        createPost: (parents, args, ctx, info) => {
+            const authorExists = users.some( user => user.id === args.author )
+
+            if (!authorExists) {
+                throw new Error('Author does not exist')
+            }
+            const post = {
+                id: uuidv4(),
+                title: args.title,
+                body: args.body,
+                published: args.published,
+                author: args.author
+            }
+            posts.push(post)
+            return post
+        },
+        createComment: (parent, args, ctx, info) => {
+            const userExist = users.some( user => user.id === args.author )
+            const postExist = posts.some( post => post.id === args.post && post.published )
+
+            if (!userExist) {
+                throw new Error('User does not exist')
+            } else if (!postExist) {
+                throw new Error('Post does not exist or is not published')
+            }
+
+            const comment = {
+                id: uuidv4(),
+                text: args.text,
+                author: args.author,
+                post: args.post
+            }
+            comments.push(comment)
+            return comment
         }
     },
     Post: {
@@ -178,7 +215,7 @@ const resolvers = {
                 return user.id === parent.author
             })
         },
-        post: (parent, arsg, ctx, info) => {
+        post: (parent, args, ctx, info) => {
             return posts.find( post => {
                 return post.id === parent.post
             })
